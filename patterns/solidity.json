@@ -1,0 +1,178 @@
+{
+  "language": "solidity",
+  "categories": [
+    {
+      "id": "rug-pull",
+      "name": "Rug Pull Patterns",
+      "severity": "critical",
+      "patterns": [
+        {
+          "id": "sol-rug-001",
+          "name": "Hidden Mint Function",
+          "description": "Owner-only function that can mint unlimited tokens, diluting holders",
+          "regex": "function\\s+\\w*[Mm]int\\w*\\s*\\([^)]*\\)\\s*(external|public)\\s+[^{]*onlyOwner",
+          "severity": "critical",
+          "recommendation": "Remove owner-only mint capability or add a hard cap enforced in the contract"
+        },
+        {
+          "id": "sol-rug-002",
+          "name": "Unlimited Mint Without Cap",
+          "description": "Mint function with no supply cap check — can inflate token supply infinitely",
+          "regex": "_mint\\s*\\([^)]+\\)(?![\\s\\S]{0,200}(totalSupply|maxSupply|MAX_SUPPLY|cap))",
+          "severity": "critical",
+          "recommendation": "Add a maximum supply check before any mint operation"
+        },
+        {
+          "id": "sol-rug-003",
+          "name": "Owner Can Pause Transfers",
+          "description": "Owner can freeze all token transfers, trapping user funds",
+          "regex": "function\\s+(pause|freeze|halt)\\w*\\s*\\([^)]*\\)\\s*(external|public)[^{]*onlyOwner",
+          "severity": "high",
+          "recommendation": "If pause is needed, add a timelock or multi-sig requirement"
+        },
+        {
+          "id": "sol-rug-004",
+          "name": "Blacklist Function",
+          "description": "Owner can blacklist addresses, preventing them from transferring tokens",
+          "regex": "function\\s+\\w*(blacklist|blocklist|ban|restrict)\\w*\\s*\\([^)]*address",
+          "severity": "high",
+          "recommendation": "Remove blacklist capability or require governance/multi-sig approval"
+        },
+        {
+          "id": "sol-rug-005",
+          "name": "Hidden Fee Modification",
+          "description": "Owner can change transaction fees to any value, potentially setting 100% fee",
+          "regex": "function\\s+set\\w*(Fee|Tax|Rate)\\s*\\([^)]*uint",
+          "severity": "high",
+          "recommendation": "Add a maximum fee cap (e.g., 10%) enforced in the setter function"
+        },
+        {
+          "id": "sol-rug-006",
+          "name": "Drain Function",
+          "description": "Function that can withdraw all ETH or tokens from the contract to the owner",
+          "regex": "function\\s+\\w*(withdraw|drain|sweep|rescue|recover)\\w*\\s*\\([^)]*\\)\\s*(external|public)[^{]*onlyOwner[^}]*\\.call\\{value:",
+          "severity": "critical",
+          "recommendation": "Remove arbitrary fund withdrawal or add timelock with public notice period"
+        },
+        {
+          "id": "sol-rug-007",
+          "name": "Self-Destruct Capability",
+          "description": "Contract can be destroyed by owner, potentially stealing all funds",
+          "regex": "selfdestruct\\s*\\(|SELFDESTRUCT",
+          "severity": "critical",
+          "recommendation": "Remove selfdestruct — it is deprecated and extremely dangerous"
+        },
+        {
+          "id": "sol-rug-008",
+          "name": "Hidden Transfer to Owner in Fees",
+          "description": "Transfer function silently sends a portion of every transaction to owner/dev wallet",
+          "regex": "_transfer\\s*\\([^)]*\\)[\\s\\S]{0,500}(owner|dev|team|marketing)\\w*\\s*(\\)|,)",
+          "severity": "high",
+          "recommendation": "Make all fee recipients transparent and immutable, or use a fee distribution contract"
+        }
+      ]
+    },
+    {
+      "id": "backdoor",
+      "name": "Backdoor Patterns",
+      "severity": "critical",
+      "patterns": [
+        {
+          "id": "sol-back-001",
+          "name": "Upgradeable Proxy Without Timelock",
+          "description": "Proxy pattern allows owner to swap implementation instantly, potentially inserting malicious code",
+          "regex": "function\\s+\\w*(upgrade|setImplementation|updateLogic)\\w*\\s*\\([^)]*address[^)]*\\)\\s*(external|public)[^{]*(onlyOwner|onlyAdmin)",
+          "severity": "critical",
+          "recommendation": "Add a timelock (e.g., 48h) with public announcement before upgrades take effect"
+        },
+        {
+          "id": "sol-back-002",
+          "name": "Delegatecall to Arbitrary Address",
+          "description": "delegatecall with a user-controlled or owner-controlled target can execute any code",
+          "regex": "\\.delegatecall\\s*\\(",
+          "severity": "critical",
+          "recommendation": "Never delegatecall to an address that can be changed by an admin without a timelock"
+        },
+        {
+          "id": "sol-back-003",
+          "name": "Hidden External Call",
+          "description": "Low-level call to an address stored in a mutable state variable",
+          "regex": "\\w+\\.call\\{[^}]*\\}\\s*\\(",
+          "severity": "medium",
+          "recommendation": "Verify the target address is immutable or governed by a timelock"
+        },
+        {
+          "id": "sol-back-004",
+          "name": "Approval Manipulation",
+          "description": "Contract can approve unlimited token spending on behalf of users",
+          "regex": "\\.approve\\s*\\([^,]+,\\s*(type\\(uint256\\)\\.max|2\\*\\*256|0xf+|uint256\\(-1\\))",
+          "severity": "high",
+          "recommendation": "Only approve the exact amount needed, never unlimited"
+        },
+        {
+          "id": "sol-back-005",
+          "name": "Hidden Admin Role",
+          "description": "Multiple admin-like roles that can perform privileged operations",
+          "regex": "modifier\\s+(onlyOwner|onlyAdmin|onlyOperator|onlyManager|onlyGovernance)",
+          "severity": "medium",
+          "recommendation": "Document all admin roles. Ensure they are governed by multi-sig or DAO"
+        },
+        {
+          "id": "sol-back-006",
+          "name": "Assembly with Arbitrary Memory Access",
+          "description": "Inline assembly can bypass Solidity safety checks and hide malicious operations",
+          "regex": "assembly\\s*\\{[\\s\\S]*?(mstore|sstore|delegatecall|create2|selfdestruct)",
+          "severity": "high",
+          "recommendation": "Audit all assembly blocks. Prefer Solidity equivalents where possible"
+        },
+        {
+          "id": "sol-back-007",
+          "name": "Manipulable Oracle",
+          "description": "Price or data oracle can be set by owner to any value",
+          "regex": "function\\s+set\\w*(Oracle|Price|Feed)\\s*\\([^)]*address",
+          "severity": "high",
+          "recommendation": "Use decentralized oracles (Chainlink). If custom, add timelock on oracle changes"
+        }
+      ]
+    },
+    {
+      "id": "vulnerability",
+      "name": "Common Vulnerabilities",
+      "severity": "high",
+      "patterns": [
+        {
+          "id": "sol-vuln-001",
+          "name": "Reentrancy Risk",
+          "description": "External call before state update — classic reentrancy pattern",
+          "regex": "\\.call\\{value:[^}]*\\}[\\s\\S]{0,100}(?!.*\\b(nonReentrant|_status|_locked)\\b)",
+          "severity": "high",
+          "recommendation": "Use checks-effects-interactions pattern or OpenZeppelin's ReentrancyGuard"
+        },
+        {
+          "id": "sol-vuln-002",
+          "name": "tx.origin Authentication",
+          "description": "Using tx.origin for auth is vulnerable to phishing attacks",
+          "regex": "require\\s*\\([^)]*tx\\.origin",
+          "severity": "high",
+          "recommendation": "Use msg.sender instead of tx.origin for authentication"
+        },
+        {
+          "id": "sol-vuln-003",
+          "name": "Unchecked Return Value",
+          "description": "Return value of external call not checked — funds may silently fail to send",
+          "regex": "\\w+\\.call\\{[^}]*\\}\\s*\\([^)]*\\)\\s*;(?!\\s*(require|if|bool))",
+          "severity": "medium",
+          "recommendation": "Always check the return value of low-level calls"
+        },
+        {
+          "id": "sol-vuln-004",
+          "name": "Timestamp Dependence",
+          "description": "Using block.timestamp for critical logic — miners can manipulate within ~15s",
+          "regex": "block\\.timestamp\\s*(==|<|>|<=|>=)",
+          "severity": "medium",
+          "recommendation": "Avoid using block.timestamp for precise timing. Use block numbers or oracles"
+        }
+      ]
+    }
+  ]
+}

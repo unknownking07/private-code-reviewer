@@ -1,0 +1,154 @@
+{
+  "language": "rust",
+  "categories": [
+    {
+      "id": "rug-pull",
+      "name": "Rug Pull Patterns (Solana/Anchor & CosmWasm)",
+      "severity": "critical",
+      "patterns": [
+        {
+          "id": "rs-rug-001",
+          "name": "Unchecked Authority/Signer",
+          "description": "Instruction handler does not verify the signer authority, allowing anyone to call admin functions",
+          "regex": "pub\\s+fn\\s+\\w+\\s*\\([^)]*ctx\\s*:\\s*Context<[^>]+>[^)]*\\)[\\s\\S]{0,300}(?!.*constraint\\s*=.*has_one|.*signer)",
+          "severity": "critical",
+          "recommendation": "Add has_one or signer constraints to verify the caller is authorized"
+        },
+        {
+          "id": "rs-rug-002",
+          "name": "Unrestricted Mint Authority",
+          "description": "Token mint instruction without proper authority checks — anyone could mint tokens",
+          "regex": "(mint_to|MintTo)\\s*\\{[\\s\\S]{0,500}(?!.*authority.*=.*constraint)",
+          "severity": "critical",
+          "recommendation": "Ensure mint authority is properly constrained and verified"
+        },
+        {
+          "id": "rs-rug-003",
+          "name": "Hidden Admin Withdrawal",
+          "description": "Function allows draining SOL/tokens from program-owned accounts to admin",
+          "regex": "fn\\s+\\w*(withdraw|drain|sweep|claim_fees)\\w*[\\s\\S]{0,500}(transfer|invoke_signed)",
+          "severity": "high",
+          "recommendation": "Ensure withdrawal functions are properly gated and amounts are limited"
+        },
+        {
+          "id": "rs-rug-004",
+          "name": "Freeze Authority Retained",
+          "description": "Program retains freeze authority over user token accounts",
+          "regex": "(freeze_authority|FreezeAccount|freeze_account)",
+          "severity": "high",
+          "recommendation": "Revoke freeze authority after initialization, or document clearly why it's needed"
+        },
+        {
+          "id": "rs-rug-005",
+          "name": "Mutable Program State Without Timelock",
+          "description": "Critical program parameters can be changed by admin immediately",
+          "regex": "fn\\s+\\w*(update_config|set_config|update_params|set_fee)\\w*\\s*\\(",
+          "severity": "high",
+          "recommendation": "Add a timelock mechanism for parameter changes"
+        }
+      ]
+    },
+    {
+      "id": "backdoor",
+      "name": "Backdoor Patterns",
+      "severity": "critical",
+      "patterns": [
+        {
+          "id": "rs-back-001",
+          "name": "Arbitrary CPI (Cross-Program Invocation)",
+          "description": "CPI to a program ID stored in a mutable account — attacker could swap the target program",
+          "regex": "invoke_signed?\\s*\\(\\s*&[\\s\\S]{0,200}(account_info|AccountInfo)",
+          "severity": "high",
+          "recommendation": "Hardcode program IDs or verify them against known constants"
+        },
+        {
+          "id": "rs-back-002",
+          "name": "Unsafe Deserialization",
+          "description": "Deserializing account data without verifying the account owner — type confusion attack",
+          "regex": "(try_from_slice|deserialize|AnchorDeserialize)\\s*\\([\\s\\S]{0,200}(?!.*owner.*==|.*Owner)",
+          "severity": "high",
+          "recommendation": "Always verify account.owner matches expected program ID before deserializing"
+        },
+        {
+          "id": "rs-back-003",
+          "name": "Unchecked PDA Derivation",
+          "description": "PDA seeds are user-controlled without proper validation — allows account substitution",
+          "regex": "Pubkey::find_program_address\\s*\\([\\s\\S]{0,200}(?!.*bump.*constraint)",
+          "severity": "high",
+          "recommendation": "Validate PDA derivation with bump constraints in Anchor"
+        },
+        {
+          "id": "rs-back-004",
+          "name": "Unsafe Transmute/Cast",
+          "description": "Using unsafe to transmute or cast data types — can bypass type safety and hide malicious operations",
+          "regex": "unsafe\\s*\\{[\\s\\S]*?(transmute|from_raw_parts|as_mut_ptr)",
+          "severity": "critical",
+          "recommendation": "Avoid unsafe blocks. If needed, document thoroughly and audit carefully"
+        },
+        {
+          "id": "rs-back-005",
+          "name": "Hidden Instruction in Init",
+          "description": "Initialization function performs unexpected actions like transferring tokens",
+          "regex": "(fn\\s+initialize|#\\[init\\])[\\s\\S]{0,1000}(transfer|mint_to|burn)",
+          "severity": "high",
+          "recommendation": "Init functions should only set up state. Move all transfers to explicit functions"
+        },
+        {
+          "id": "rs-back-006",
+          "name": "Upgradeable Program Without Constraints",
+          "description": "Program is upgradeable and authority is a single keypair",
+          "regex": "(upgrade_authority|set_authority|SetAuthority)",
+          "severity": "medium",
+          "recommendation": "Use multi-sig for upgrade authority. Consider making program immutable after audit"
+        }
+      ]
+    },
+    {
+      "id": "vulnerability",
+      "name": "Common Vulnerabilities",
+      "severity": "high",
+      "patterns": [
+        {
+          "id": "rs-vuln-001",
+          "name": "Integer Overflow/Underflow",
+          "description": "Arithmetic without overflow checks in critical calculations",
+          "regex": "(checked_add|checked_sub|checked_mul|checked_div|overflow_)?[\\s\\S]{0,50}(as\\s+u64|as\\s+u128|as\\s+i64)",
+          "severity": "medium",
+          "recommendation": "Use checked arithmetic (checked_add, checked_sub, etc.) for all financial calculations"
+        },
+        {
+          "id": "rs-vuln-002",
+          "name": "Missing Account Validation",
+          "description": "Account constraints are missing — program accepts accounts it shouldn't",
+          "regex": "#\\[account\\(\\s*mut\\s*\\)]\\s*pub\\s+\\w+:\\s*AccountInfo",
+          "severity": "high",
+          "recommendation": "Use typed accounts with proper constraints instead of raw AccountInfo"
+        },
+        {
+          "id": "rs-vuln-003",
+          "name": "Insufficient Signer Check",
+          "description": "Function accepts a signer but doesn't verify it matches the expected authority",
+          "regex": "pub\\s+\\w+:\\s*Signer[\\s\\S]{0,200}(?!.*constraint.*=.*key)",
+          "severity": "high",
+          "recommendation": "Add key constraints to verify the signer is the expected authority"
+        },
+        {
+          "id": "rs-vuln-004",
+          "name": "Duplicate Mutable Account",
+          "description": "Same account passed as two different mutable arguments — can cause unexpected behavior",
+          "regex": "#\\[account\\(\\s*mut\\s*\\)][\\s\\S]{0,100}#\\[account\\(\\s*mut\\s*\\)]",
+          "severity": "medium",
+          "recommendation": "Add constraint to ensure mutable accounts are distinct"
+        },
+        {
+          "id": "rs-vuln-005",
+          "name": "Panicking in Production",
+          "description": "Using unwrap() or expect() instead of proper error handling",
+          "regex": "\\.(unwrap|expect)\\s*\\(",
+          "severity": "low",
+          "recommendation": "Use proper error handling with Result types and custom error enums"
+        }
+      ]
+    }
+  ]
+}
