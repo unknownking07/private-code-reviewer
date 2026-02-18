@@ -1,0 +1,138 @@
+{
+  "language": "move",
+  "categories": [
+    {
+      "id": "rug-pull",
+      "name": "Rug Pull Patterns",
+      "severity": "critical",
+      "patterns": [
+        {
+          "id": "move-rug-001",
+          "name": "Unrestricted Mint Capability",
+          "description": "Mint function without proper access control can inflate token supply",
+          "regex": "public\\s+(entry\\s+)?fun\\s+\\w*mint\\w*[^}]*\\{[^}]*(?!assert|abort)",
+          "severity": "critical",
+          "recommendation": "Restrict mint to authorized accounts and add supply cap checks"
+        },
+        {
+          "id": "move-rug-002",
+          "name": "Admin Can Freeze Accounts",
+          "description": "Admin can freeze user accounts, preventing transfers",
+          "regex": "public\\s+(entry\\s+)?fun\\s+\\w*(freeze|pause|disable)\\w*",
+          "severity": "high",
+          "recommendation": "Add timelock or multi-sig requirement for freeze operations"
+        },
+        {
+          "id": "move-rug-003",
+          "name": "Unrestricted Burn of User Tokens",
+          "description": "Admin can burn tokens from any user's account",
+          "regex": "public\\s+(entry\\s+)?fun\\s+\\w*burn\\w*[^}]*from\\s*:",
+          "severity": "critical",
+          "recommendation": "Only allow users to burn their own tokens"
+        },
+        {
+          "id": "move-rug-004",
+          "name": "Hidden Fee Extraction",
+          "description": "Transfer function silently takes fees to admin account",
+          "regex": "coin::transfer[^;]*admin|coin::deposit[^;]*fee_collector",
+          "severity": "high",
+          "recommendation": "Make all fee mechanisms transparent and verifiable"
+        },
+        {
+          "id": "move-rug-005",
+          "name": "Emergency Withdraw All",
+          "description": "Function that can drain all funds from the module to admin",
+          "regex": "public\\s+(entry\\s+)?fun\\s+\\w*(emergency|withdraw_all|drain|sweep)\\w*",
+          "severity": "critical",
+          "recommendation": "Remove arbitrary withdrawal or add governance approval requirement"
+        }
+      ]
+    },
+    {
+      "id": "backdoor",
+      "name": "Backdoor Patterns",
+      "severity": "critical",
+      "patterns": [
+        {
+          "id": "move-back-001",
+          "name": "Upgradeable Module Without Governance",
+          "description": "Module can be upgraded by single admin without governance approval",
+          "regex": "public\\s+(entry\\s+)?fun\\s+\\w*(upgrade|update_module|migrate)\\w*",
+          "severity": "critical",
+          "recommendation": "Require multi-sig or DAO governance for module upgrades"
+        },
+        {
+          "id": "move-back-002",
+          "name": "Dynamic Dispatch via Phantom Types",
+          "description": "Using phantom type parameters to hide execution paths",
+          "regex": "phantom\\s+\\w+[\\s\\S]{0,200}(call|invoke|execute)",
+          "severity": "high",
+          "recommendation": "Audit all phantom type usage for hidden execution paths"
+        },
+        {
+          "id": "move-back-003",
+          "name": "Mutable Shared Object Manipulation",
+          "description": "Shared objects with unrestricted mutation can be exploited",
+          "regex": "&mut\\s+\\w+[\\s\\S]{0,100}(transfer|public_transfer)",
+          "severity": "high",
+          "recommendation": "Restrict mutation of shared objects to authorized parties"
+        },
+        {
+          "id": "move-back-004",
+          "name": "Hidden Admin Capability",
+          "description": "Admin capabilities stored in non-transparent locations",
+          "regex": "struct\\s+\\w*(Admin|Owner|Cap|Authority)\\w*\\s+has\\s+(key|store)",
+          "severity": "medium",
+          "recommendation": "Document all admin capabilities and make them publicly queryable"
+        },
+        {
+          "id": "move-back-005",
+          "name": "Unrestricted Object Transfer",
+          "description": "Objects can be transferred without proper authorization checks",
+          "regex": "transfer::public_transfer[^;]*(?!assert|abort)",
+          "severity": "high",
+          "recommendation": "Add authorization checks before object transfers"
+        }
+      ]
+    },
+    {
+      "id": "vulnerability",
+      "name": "Common Vulnerabilities",
+      "severity": "high",
+      "patterns": [
+        {
+          "id": "move-vuln-001",
+          "name": "Integer Overflow Risk",
+          "description": "Arithmetic operations without overflow checks",
+          "regex": "\\+\\s*\\w+(?![\\s\\S]{0,50}(checked|safe|assert|abort))",
+          "severity": "medium",
+          "recommendation": "Use checked arithmetic or add explicit overflow guards"
+        },
+        {
+          "id": "move-vuln-002",
+          "name": "Missing Signer Verification",
+          "description": "Entry function doesn't verify the signer parameter",
+          "regex": "public\\s+entry\\s+fun\\s+\\w+\\s*\\([^)]*signer[^)]*\\)[^{]*\\{(?![\\s\\S]{0,200}signer::address_of)",
+          "severity": "high",
+          "recommendation": "Always verify signer identity with signer::address_of"
+        },
+        {
+          "id": "move-vuln-003",
+          "name": "Unprotected Init Function",
+          "description": "Initialization function can be called multiple times",
+          "regex": "public\\s+(entry\\s+)?fun\\s+init(ialize)?\\s*\\(",
+          "severity": "high",
+          "recommendation": "Ensure init can only be called once using a flag or module init pattern"
+        },
+        {
+          "id": "move-vuln-004",
+          "name": "Flash Loan Vulnerability",
+          "description": "Borrowing without proper repayment enforcement",
+          "regex": "fun\\s+\\w*(borrow|flash|loan)\\w*[^}]*\\{[^}]*(?!assert.*repay|abort)",
+          "severity": "high",
+          "recommendation": "Enforce repayment within the same transaction using hot potato pattern"
+        }
+      ]
+    }
+  ]
+}

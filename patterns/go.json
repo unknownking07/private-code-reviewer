@@ -1,0 +1,146 @@
+{
+  "language": "go",
+  "categories": [
+    {
+      "id": "rug-pull",
+      "name": "Rug Pull Patterns",
+      "severity": "critical",
+      "patterns": [
+        {
+          "id": "go-rug-001",
+          "name": "Unrestricted Mint in Cosmos SDK",
+          "description": "Token minting without proper authority check in Cosmos SDK module",
+          "regex": "func\\s+\\([^)]*Keeper\\)\\s+Mint\\w*\\s*\\([^)]*\\)[\\s\\S]*?\\{[\\s\\S]*?(?!authority|admin|governance)",
+          "severity": "critical",
+          "recommendation": "Restrict minting to governance or authorized module accounts"
+        },
+        {
+          "id": "go-rug-002",
+          "name": "Admin Can Modify Parameters",
+          "description": "Module parameters can be changed by single admin without governance",
+          "regex": "func\\s+\\([^)]*Keeper\\)\\s+SetParams\\s*\\([^)]*\\)[\\s\\S]*?(?!governance|proposal)",
+          "severity": "high",
+          "recommendation": "Parameter changes should go through governance proposals"
+        },
+        {
+          "id": "go-rug-003",
+          "name": "Emergency Fund Withdrawal",
+          "description": "Function that drains module account funds to admin",
+          "regex": "func\\s+\\w*(EmergencyWithdraw|DrainFunds|Sweep|RescueFunds)\\w*\\s*\\(",
+          "severity": "critical",
+          "recommendation": "Remove arbitrary fund withdrawal or require multi-sig governance"
+        },
+        {
+          "id": "go-rug-004",
+          "name": "Hidden Token Burn",
+          "description": "Admin can burn tokens from any user account",
+          "regex": "BurnCoins|SendCoinsFromAccountToModule[\\s\\S]{0,100}burn",
+          "severity": "critical",
+          "recommendation": "Only allow users to burn their own tokens"
+        },
+        {
+          "id": "go-rug-005",
+          "name": "Upgradeable Without Governance",
+          "description": "Module upgrade handler without governance approval",
+          "regex": "func\\s+\\w*UpgradeHandler\\w*[^{]*\\{[^}]*(?!proposal|governance|vote)",
+          "severity": "high",
+          "recommendation": "All upgrades should go through on-chain governance"
+        }
+      ]
+    },
+    {
+      "id": "backdoor",
+      "name": "Backdoor Patterns",
+      "severity": "critical",
+      "patterns": [
+        {
+          "id": "go-back-001",
+          "name": "Hardcoded Admin Address",
+          "description": "Admin address hardcoded in source code",
+          "regex": "(adminAddr|ownerAddr|authority)\\s*[:=]\\s*\"[a-z0-9]+\"",
+          "severity": "high",
+          "recommendation": "Use governance-controlled admin addresses, not hardcoded ones"
+        },
+        {
+          "id": "go-back-002",
+          "name": "Unsafe Exec in Module",
+          "description": "Module executes arbitrary messages without validation",
+          "regex": "func\\s+\\([^)]*\\)\\s+\\w*Exec\\w*[^{]*\\{[\\s\\S]*?(sdk\\.Msg|proto\\.Message)[\\s\\S]*?(?!validate|Verify)",
+          "severity": "critical",
+          "recommendation": "Validate all messages before execution"
+        },
+        {
+          "id": "go-back-003",
+          "name": "Bypass Auth Module",
+          "description": "Directly accessing accounts bypassing the auth module",
+          "regex": "GetAccount\\s*\\([^)]*\\)[\\s\\S]{0,100}SetAccount",
+          "severity": "high",
+          "recommendation": "Always use proper auth module for account operations"
+        },
+        {
+          "id": "go-back-004",
+          "name": "Hidden HTTP/gRPC Endpoint",
+          "description": "Undocumented API endpoint that could provide backdoor access",
+          "regex": "func\\s+\\w*Register\\w*(Routes|Handlers|Services)\\w*[^{]*\\{[\\s\\S]*?(debug|admin|internal|hidden)",
+          "severity": "high",
+          "recommendation": "Document all API endpoints and remove debug/admin routes in production"
+        },
+        {
+          "id": "go-back-005",
+          "name": "Unsafe Deserialization",
+          "description": "Deserializing untrusted data without validation",
+          "regex": "(json\\.Unmarshal|proto\\.Unmarshal|amino\\.Unmarshal)[^;]*(?!validate|Verify|err\\s*!=\\s*nil)",
+          "severity": "high",
+          "recommendation": "Always validate deserialized data and handle errors"
+        }
+      ]
+    },
+    {
+      "id": "vulnerability",
+      "name": "Common Vulnerabilities",
+      "severity": "high",
+      "patterns": [
+        {
+          "id": "go-vuln-001",
+          "name": "Panic in Handler",
+          "description": "Panic in message handler can halt the chain",
+          "regex": "panic\\s*\\(",
+          "severity": "high",
+          "recommendation": "Use error returns instead of panic in handlers"
+        },
+        {
+          "id": "go-vuln-002",
+          "name": "Integer Overflow",
+          "description": "Integer arithmetic without overflow checks",
+          "regex": "sdk\\.NewInt\\w*\\([^)]*\\)\\.(Add|Mul)\\(",
+          "severity": "medium",
+          "recommendation": "Use SDK's safe math functions and check for overflow"
+        },
+        {
+          "id": "go-vuln-003",
+          "name": "Missing Error Handling",
+          "description": "Ignoring error return values from critical operations",
+          "regex": "\\w+,\\s*_\\s*:?=\\s*(\\w+\\.Get|\\w+\\.Set|\\w+\\.Send|\\w+\\.Delete)",
+          "severity": "high",
+          "recommendation": "Always check error return values"
+        },
+        {
+          "id": "go-vuln-004",
+          "name": "Non-Deterministic Code",
+          "description": "Using maps without sorting or random in consensus code causes chain halt",
+          "regex": "(range\\s+\\w+Map|rand\\.(Int|Float|Seed))",
+          "severity": "critical",
+          "recommendation": "Sort map iterations and never use randomness in consensus code"
+        },
+        {
+          "id": "go-vuln-005",
+          "name": "Goroutine in Handler",
+          "description": "Spawning goroutines in message handlers causes non-determinism",
+          "regex": "go\\s+func\\s*\\(|go\\s+\\w+\\(",
+          "severity": "critical",
+          "recommendation": "Never use goroutines in consensus-critical code paths"
+        }
+      ]
+    }
+  ]
+}

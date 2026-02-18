@@ -10,12 +10,12 @@ const upload = multer({
     fileSize: (parseInt(process.env.MAX_UPLOAD_SIZE_MB || "50") || 50) * 1024 * 1024,
   },
   fileFilter: (_req, file, cb) => {
-    const allowed = [".zip", ".tar", ".gz", ".tgz", ".sol", ".rs"];
+    const allowed = [".zip", ".tar", ".gz", ".tgz", ".sol", ".rs", ".move", ".vy", ".vyper", ".cairo", ".go", ".ts", ".tsx", ".js", ".jsx"];
     const ext = path.extname(file.originalname).toLowerCase();
     if (allowed.includes(ext)) {
       cb(null, true);
     } else {
-      cb(new Error(`File type ${ext} not supported. Upload .zip, .tar.gz, .sol, or .rs files.`));
+      cb(new Error(`File type ${ext} not supported. Upload .zip, .tar.gz, or individual source files (.sol, .rs, .move, .vy, .cairo, .go, .ts, .js).`));
     }
   },
 });
@@ -27,7 +27,7 @@ export function createAPIRouter(orchestrator: ReviewOrchestrator): Router {
   router.post("/review", upload.single("code"), async (req: Request, res: Response) => {
     try {
       if (!req.file) {
-        res.status(400).json({ error: "No file uploaded. Send a .zip, .tar.gz, .sol, or .rs file." });
+        res.status(400).json({ error: "No file uploaded. Send a .zip, .tar.gz, or source file (.sol, .rs, .move, .vy, .cairo, .go, .ts, .js)." });
         return;
       }
 

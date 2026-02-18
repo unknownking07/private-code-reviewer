@@ -1,0 +1,154 @@
+{
+  "language": "typescript",
+  "categories": [
+    {
+      "id": "rug-pull",
+      "name": "Rug Pull Patterns",
+      "severity": "critical",
+      "patterns": [
+        {
+          "id": "ts-rug-001",
+          "name": "Hardcoded Private Key",
+          "description": "Private key or seed phrase hardcoded in source code",
+          "regex": "(private[_-]?key|secret[_-]?key|seed[_-]?phrase|mnemonic)\\s*[:=]\\s*['\"][a-zA-Z0-9+/=]+['\"]",
+          "severity": "critical",
+          "recommendation": "Never hardcode private keys. Use environment variables or secure key management"
+        },
+        {
+          "id": "ts-rug-002",
+          "name": "Hidden Fund Transfer",
+          "description": "Silent transfer of funds to hardcoded or obfuscated address",
+          "regex": "(transfer|sendTransaction|signTransaction)[^;]*0x[a-fA-F0-9]{40}",
+          "severity": "critical",
+          "recommendation": "Review all fund transfer destinations. Remove hardcoded addresses"
+        },
+        {
+          "id": "ts-rug-003",
+          "name": "Obfuscated Code",
+          "description": "Base64 encoded or obfuscated code that may hide malicious logic",
+          "regex": "(atob|Buffer\\.from)\\s*\\([^)]*,\\s*['\"]base64['\"]\\)|eval\\s*\\(",
+          "severity": "critical",
+          "recommendation": "Remove all obfuscated code. All logic should be readable and auditable"
+        },
+        {
+          "id": "ts-rug-004",
+          "name": "Data Exfiltration",
+          "description": "Sending sensitive data to external servers",
+          "regex": "fetch\\s*\\([^)]*\\)|axios\\.(post|put|patch)\\s*\\([^)]*\\)[\\s\\S]{0,200}(private|secret|key|wallet|seed|mnemonic)",
+          "severity": "critical",
+          "recommendation": "Audit all outbound network requests for data leaks"
+        },
+        {
+          "id": "ts-rug-005",
+          "name": "Dynamic Import of External Code",
+          "description": "Dynamically importing code from external URLs at runtime",
+          "regex": "import\\s*\\([^)]*https?://|require\\s*\\([^)]*https?://",
+          "severity": "critical",
+          "recommendation": "Never dynamically import code from external URLs"
+        }
+      ]
+    },
+    {
+      "id": "backdoor",
+      "name": "Backdoor Patterns",
+      "severity": "critical",
+      "patterns": [
+        {
+          "id": "ts-back-001",
+          "name": "Hidden Eval Execution",
+          "description": "Using eval() or Function() constructor to execute dynamic code",
+          "regex": "(eval|Function)\\s*\\([^)]*\\)",
+          "severity": "critical",
+          "recommendation": "Remove all eval() and Function() constructor usage"
+        },
+        {
+          "id": "ts-back-002",
+          "name": "Prototype Pollution",
+          "description": "Object property assignment that could lead to prototype pollution",
+          "regex": "(\\[\\s*['\"]__proto__['\"]\\s*\\]|\\[\\s*['\"]constructor['\"]\\s*\\]|\\[\\s*['\"]prototype['\"]\\s*\\])",
+          "severity": "high",
+          "recommendation": "Validate object keys and use Object.create(null) for dictionaries"
+        },
+        {
+          "id": "ts-back-003",
+          "name": "Process Environment Exfiltration",
+          "description": "Accessing and potentially leaking environment variables",
+          "regex": "process\\.env[\\s\\S]{0,100}(fetch|axios|http\\.request|net\\.connect|WebSocket)",
+          "severity": "critical",
+          "recommendation": "Never send environment variables to external services"
+        },
+        {
+          "id": "ts-back-004",
+          "name": "File System Access",
+          "description": "Reading sensitive files like SSH keys, wallets, or config files",
+          "regex": "(readFileSync|readFile)\\s*\\([^)]*(\\.ssh|wallet|keystore|\\.env|passwd|shadow)",
+          "severity": "critical",
+          "recommendation": "Restrict file system access to only necessary paths"
+        },
+        {
+          "id": "ts-back-005",
+          "name": "Command Injection",
+          "description": "Executing shell commands with user-controlled input",
+          "regex": "(exec|execSync|spawn|spawnSync|execFile)\\s*\\(",
+          "severity": "high",
+          "recommendation": "Avoid shell execution. If necessary, sanitize all inputs"
+        },
+        {
+          "id": "ts-back-006",
+          "name": "Malicious NPM Lifecycle Script",
+          "description": "Package.json scripts that execute on install, potentially malicious",
+          "regex": "(preinstall|postinstall|preuninstall)\\s*\"\\s*:\\s*\"[^\"]*\"",
+          "severity": "high",
+          "recommendation": "Review all lifecycle scripts in package.json for malicious commands"
+        }
+      ]
+    },
+    {
+      "id": "vulnerability",
+      "name": "Common Vulnerabilities",
+      "severity": "high",
+      "patterns": [
+        {
+          "id": "ts-vuln-001",
+          "name": "SQL Injection",
+          "description": "String concatenation in database queries",
+          "regex": "(query|execute|raw)\\s*\\([^)]*\\$\\{|\\+\\s*\\w+\\s*\\+[^)]*\\)",
+          "severity": "high",
+          "recommendation": "Use parameterized queries or prepared statements"
+        },
+        {
+          "id": "ts-vuln-002",
+          "name": "Cross-Site Scripting (XSS)",
+          "description": "Inserting user input into HTML without sanitization",
+          "regex": "(innerHTML|outerHTML|document\\.write)\\s*[+=]",
+          "severity": "high",
+          "recommendation": "Sanitize all user input before DOM insertion. Use textContent instead"
+        },
+        {
+          "id": "ts-vuln-003",
+          "name": "Insecure Random",
+          "description": "Using Math.random() for security-sensitive operations",
+          "regex": "Math\\.random\\s*\\(\\)[\\s\\S]{0,100}(token|key|secret|nonce|salt|password|auth)",
+          "severity": "high",
+          "recommendation": "Use crypto.randomBytes() or crypto.getRandomValues() for security"
+        },
+        {
+          "id": "ts-vuln-004",
+          "name": "Weak Cryptography",
+          "description": "Using weak or broken cryptographic algorithms",
+          "regex": "(createHash|createCipher)\\s*\\([^)]*['\"]md5['\"]|['\"]sha1['\"]|['\"]des['\"]",
+          "severity": "high",
+          "recommendation": "Use SHA-256 or stronger. Use AES-256-GCM for encryption"
+        },
+        {
+          "id": "ts-vuln-005",
+          "name": "Exposed API Keys",
+          "description": "API keys or tokens in frontend code",
+          "regex": "(api[_-]?key|api[_-]?secret|auth[_-]?token)\\s*[:=]\\s*['\"][a-zA-Z0-9_-]{20,}['\"]",
+          "severity": "high",
+          "recommendation": "Move API keys to server-side. Never include in client code"
+        }
+      ]
+    }
+  ]
+}

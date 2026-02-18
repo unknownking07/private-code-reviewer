@@ -8,6 +8,11 @@ import { logger } from "../utils/logger";
 
 const SOLIDITY_EXTENSIONS = [".sol"];
 const RUST_EXTENSIONS = [".rs"];
+const MOVE_EXTENSIONS = [".move"];
+const VYPER_EXTENSIONS = [".vy", ".vyper"];
+const CAIRO_EXTENSIONS = [".cairo"];
+const GO_EXTENSIONS = [".go"];
+const TYPESCRIPT_EXTENSIONS = [".ts", ".tsx", ".js", ".jsx"];
 const MAX_FILE_SIZE = 500 * 1024; // 500KB per file
 
 export class FileProcessor {
@@ -65,6 +70,11 @@ export class FileProcessor {
 
           if (SOLIDITY_EXTENSIONS.includes(ext)) language = "solidity";
           else if (RUST_EXTENSIONS.includes(ext)) language = "rust";
+          else if (MOVE_EXTENSIONS.includes(ext)) language = "move";
+          else if (VYPER_EXTENSIONS.includes(ext)) language = "vyper";
+          else if (CAIRO_EXTENSIONS.includes(ext)) language = "cairo";
+          else if (GO_EXTENSIONS.includes(ext)) language = "go";
+          else if (TYPESCRIPT_EXTENSIONS.includes(ext)) language = "typescript";
           else continue; // Skip non-target files
 
           const stat = fs.statSync(fullPath);

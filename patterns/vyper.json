@@ -1,0 +1,138 @@
+{
+  "language": "vyper",
+  "categories": [
+    {
+      "id": "rug-pull",
+      "name": "Rug Pull Patterns",
+      "severity": "critical",
+      "patterns": [
+        {
+          "id": "vyp-rug-001",
+          "name": "Hidden Mint Function",
+          "description": "Owner-only function that can mint unlimited tokens",
+          "regex": "@external\\s+def\\s+\\w*mint\\w*\\s*\\([^)]*\\):[\\s\\S]*?self\\.owner",
+          "severity": "critical",
+          "recommendation": "Remove owner-only mint or add hard supply cap"
+        },
+        {
+          "id": "vyp-rug-002",
+          "name": "Owner Can Pause Transfers",
+          "description": "Owner can freeze all token transfers, trapping user funds",
+          "regex": "@external\\s+def\\s+(pause|freeze|halt|stop)\\w*\\s*\\(",
+          "severity": "high",
+          "recommendation": "Add timelock or multi-sig requirement for pause operations"
+        },
+        {
+          "id": "vyp-rug-003",
+          "name": "Blacklist Capability",
+          "description": "Owner can blacklist addresses from transferring tokens",
+          "regex": "(blacklist|blocklist|banned|restricted)\\s*:\\s*(public\\()?HashMap",
+          "severity": "high",
+          "recommendation": "Remove blacklist capability or require governance approval"
+        },
+        {
+          "id": "vyp-rug-004",
+          "name": "Drain Function",
+          "description": "Function that sends all contract funds to owner",
+          "regex": "@external\\s+def\\s+\\w*(withdraw|drain|sweep|rescue)\\w*[\\s\\S]*?send\\(self\\.owner",
+          "severity": "critical",
+          "recommendation": "Remove arbitrary fund withdrawal or add timelock"
+        },
+        {
+          "id": "vyp-rug-005",
+          "name": "Modifiable Fee Structure",
+          "description": "Owner can change fees to any value including 100%",
+          "regex": "@external\\s+def\\s+set\\w*(fee|tax|rate)\\w*\\s*\\([^)]*uint256",
+          "severity": "high",
+          "recommendation": "Add maximum fee cap enforced in the setter"
+        }
+      ]
+    },
+    {
+      "id": "backdoor",
+      "name": "Backdoor Patterns",
+      "severity": "critical",
+      "patterns": [
+        {
+          "id": "vyp-back-001",
+          "name": "Raw Call to External Address",
+          "description": "Low-level raw_call can execute arbitrary code at any address",
+          "regex": "raw_call\\s*\\(",
+          "severity": "critical",
+          "recommendation": "Avoid raw_call. Use typed interfaces for external calls"
+        },
+        {
+          "id": "vyp-back-002",
+          "name": "Mutable Owner Without Renounce",
+          "description": "Contract owner can be changed but never renounced",
+          "regex": "self\\.owner\\s*=\\s*\\w+(?![\\s\\S]{0,500}renounce)",
+          "severity": "medium",
+          "recommendation": "Add renounce_ownership function for trustless operation"
+        },
+        {
+          "id": "vyp-back-003",
+          "name": "Hidden Selfdestruct",
+          "description": "Contract can be destroyed by owner, stealing all funds",
+          "regex": "selfdestruct\\s*\\(",
+          "severity": "critical",
+          "recommendation": "Remove selfdestruct — it's deprecated and dangerous"
+        },
+        {
+          "id": "vyp-back-004",
+          "name": "Unrestricted Delegatecall",
+          "description": "Delegatecall with controllable target can execute arbitrary code",
+          "regex": "raw_call\\s*\\([^,]+,\\s*[^,]+,\\s*[^,]*is_delegate_call\\s*=\\s*True",
+          "severity": "critical",
+          "recommendation": "Never delegatecall to mutable addresses"
+        },
+        {
+          "id": "vyp-back-005",
+          "name": "Multiple Admin Roles",
+          "description": "Contract has multiple privileged roles that can perform admin actions",
+          "regex": "(owner|admin|operator|manager|governor)\\s*:\\s*(public\\()?address",
+          "severity": "medium",
+          "recommendation": "Document all admin roles and use multi-sig governance"
+        }
+      ]
+    },
+    {
+      "id": "vulnerability",
+      "name": "Common Vulnerabilities",
+      "severity": "high",
+      "patterns": [
+        {
+          "id": "vyp-vuln-001",
+          "name": "Reentrancy Risk",
+          "description": "External call before state update — reentrancy vector",
+          "regex": "send\\s*\\([^)]*\\)[\\s\\S]{0,100}self\\.",
+          "severity": "high",
+          "recommendation": "Use checks-effects-interactions pattern or @nonreentrant decorator"
+        },
+        {
+          "id": "vyp-vuln-002",
+          "name": "Missing Nonreentrant Guard",
+          "description": "External function with value transfer missing @nonreentrant",
+          "regex": "@external\\s+(?!@nonreentrant)def\\s+\\w+[^:]*:[\\s\\S]*?send\\(",
+          "severity": "high",
+          "recommendation": "Add @nonreentrant decorator to functions with external calls"
+        },
+        {
+          "id": "vyp-vuln-003",
+          "name": "Unchecked Send Return",
+          "description": "Return value of send() not checked — funds may silently fail",
+          "regex": "send\\s*\\([^)]*\\)\\s*(?!\\s*assert|if)",
+          "severity": "medium",
+          "recommendation": "Always check the return value of send()"
+        },
+        {
+          "id": "vyp-vuln-004",
+          "name": "Block Timestamp Dependence",
+          "description": "Using block.timestamp for critical logic — can be manipulated",
+          "regex": "block\\.timestamp\\s*(==|<|>|<=|>=)",
+          "severity": "medium",
+          "recommendation": "Avoid block.timestamp for precise timing"
+        }
+      ]
+    }
+  ]
+}

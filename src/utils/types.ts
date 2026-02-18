@@ -62,6 +62,6 @@ export interface ReviewJob {
 export interface FileEntry {
   path: string;
   content: string;
-  language: "solidity" | "rust" | "unknown";
+  language: "solidity" | "rust" | "move" | "vyper" | "cairo" | "go" | "typescript" | "unknown";
   size: number;
 }

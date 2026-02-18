@@ -173,6 +173,45 @@
           "recommendation": "Avoid using block.timestamp for precise timing. Use block numbers or oracles"
         }
       ]
+    },
+    {
+      "id": "hyperliquid",
+      "name": "HyperEVM / Hyperliquid Patterns",
+      "severity": "critical",
+      "patterns": [
+        {
+          "id": "sol-hyp-001",
+          "name": "Unsafe CoreWriter Order Placement",
+          "description": "Placing orders via CoreWriter precompile without proper slippage or size validation",
+          "regex": "(CoreWriter|IOrderBook|0x00000000000000000000000000000000000000FF)\\.call",
+          "severity": "high",
+          "recommendation": "Validate order parameters and add slippage protection before CoreWriter calls"
+        },
+        {
+          "id": "sol-hyp-002",
+          "name": "Unprotected HyperCore Bridge Transfer",
+          "description": "Bridging assets between HyperEVM and HyperCore without validation",
+          "regex": "(transferToL1|bridgeToCore|coreTransfer)\\s*\\(",
+          "severity": "high",
+          "recommendation": "Add proper access control and validation for cross-environment transfers"
+        },
+        {
+          "id": "sol-hyp-003",
+          "name": "MEV Vulnerability in Order Flow",
+          "description": "Order placement pattern susceptible to front-running or sandwich attacks",
+          "regex": "(placeOrder|submitOrder|createOrder)\\s*\\([^)]*\\)[\\s\\S]{0,200}(?!deadline|maxSlippage|minReturn)",
+          "severity": "high",
+          "recommendation": "Add deadline and slippage protection to all order submissions"
+        },
+        {
+          "id": "sol-hyp-004",
+          "name": "Unbounded Liquidation Exposure",
+          "description": "Leveraged position without proper margin or stop-loss checks",
+          "regex": "(leverage|margin|position)[\\s\\S]{0,200}(?!require|assert|maxLeverage|stopLoss)",
+          "severity": "critical",
+          "recommendation": "Add maximum leverage limits and automated stop-loss mechanisms"
+        }
+      ]
     }
   ]
 }

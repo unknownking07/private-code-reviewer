@@ -61,15 +61,20 @@ export function UploadZone({ onUpload, disabled }: Props) {
         Drop a file or click to browse. Your code stays inside the TEE — always.
       </div>
       <div className="upload-zone__formats">
-        <span className="upload-zone__format">.zip</span>
-        <span className="upload-zone__format">.tar.gz</span>
         <span className="upload-zone__format">.sol</span>
         <span className="upload-zone__format">.rs</span>
+        <span className="upload-zone__format">.move</span>
+        <span className="upload-zone__format">.vy</span>
+        <span className="upload-zone__format">.cairo</span>
+        <span className="upload-zone__format">.go</span>
+        <span className="upload-zone__format">.ts</span>
+        <span className="upload-zone__format">.js</span>
+        <span className="upload-zone__format">.zip</span>
       </div>
       <input
         ref={inputRef}
         type="file"
-        accept=".zip,.tar,.gz,.tgz,.sol,.rs"
+        accept=".zip,.tar,.gz,.tgz,.sol,.rs,.move,.vy,.vyper,.cairo,.go,.ts,.tsx,.js,.jsx"
         onChange={handleChange}
         style={{ display: "none" }}
       />

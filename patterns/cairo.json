@@ -1,0 +1,138 @@
+{
+  "language": "cairo",
+  "categories": [
+    {
+      "id": "rug-pull",
+      "name": "Rug Pull Patterns",
+      "severity": "critical",
+      "patterns": [
+        {
+          "id": "cairo-rug-001",
+          "name": "Unrestricted Mint Function",
+          "description": "Mint function without proper access control or supply cap",
+          "regex": "fn\\s+mint\\s*\\([^)]*\\)[\\s\\S]*?\\{[\\s\\S]*?(?!(assert|assert_only_role|get_caller_address))",
+          "severity": "critical",
+          "recommendation": "Restrict mint to authorized callers and add supply cap"
+        },
+        {
+          "id": "cairo-rug-002",
+          "name": "Admin Can Pause Contract",
+          "description": "Admin can pause all contract operations, freezing user funds",
+          "regex": "fn\\s+(pause|freeze|halt|emergency_stop)\\s*\\(",
+          "severity": "high",
+          "recommendation": "Add timelock or multi-sig for pause operations"
+        },
+        {
+          "id": "cairo-rug-003",
+          "name": "Drain Function",
+          "description": "Admin can withdraw all funds from the contract",
+          "regex": "fn\\s+\\w*(withdraw_all|drain|sweep|emergency_withdraw|rescue)\\w*\\s*\\(",
+          "severity": "critical",
+          "recommendation": "Remove arbitrary fund withdrawal or add governance approval"
+        },
+        {
+          "id": "cairo-rug-004",
+          "name": "Mutable Fee Configuration",
+          "description": "Admin can change fees to any value",
+          "regex": "fn\\s+set\\w*(fee|tax|rate|commission)\\w*\\s*\\([^)]*felt252",
+          "severity": "high",
+          "recommendation": "Add maximum fee cap enforced in the setter"
+        },
+        {
+          "id": "cairo-rug-005",
+          "name": "Hidden Transfer in Logic",
+          "description": "Token transfer to admin/dev embedded in regular operations",
+          "regex": "transfer\\s*\\([^)]*admin|transfer\\s*\\([^)]*owner|transfer\\s*\\([^)]*dev",
+          "severity": "high",
+          "recommendation": "Make all fee recipients transparent and immutable"
+        }
+      ]
+    },
+    {
+      "id": "backdoor",
+      "name": "Backdoor Patterns",
+      "severity": "critical",
+      "patterns": [
+        {
+          "id": "cairo-back-001",
+          "name": "Upgradeable Without Timelock",
+          "description": "Contract upgrade function without governance delay",
+          "regex": "fn\\s+upgrade\\s*\\([^)]*ClassHash[^)]*\\)",
+          "severity": "critical",
+          "recommendation": "Add timelock and governance approval for upgrades"
+        },
+        {
+          "id": "cairo-back-002",
+          "name": "Library Call to Mutable Address",
+          "description": "Library call with admin-controlled class hash",
+          "regex": "library_call_syscall|call_contract_syscall",
+          "severity": "critical",
+          "recommendation": "Ensure target addresses are immutable or governed by timelock"
+        },
+        {
+          "id": "cairo-back-003",
+          "name": "Hidden Owner Change",
+          "description": "Owner/admin can be changed without event emission or timelock",
+          "regex": "fn\\s+\\w*(set_owner|transfer_ownership|set_admin)\\w*[^}]*\\{[^}]*(?!emit)",
+          "severity": "high",
+          "recommendation": "Emit events on ownership changes and add timelock"
+        },
+        {
+          "id": "cairo-back-004",
+          "name": "Replace Class Hash",
+          "description": "Contract class can be replaced by admin, changing all logic",
+          "regex": "replace_class_syscall\\s*\\(",
+          "severity": "critical",
+          "recommendation": "Use governance with timelock for class hash replacement"
+        },
+        {
+          "id": "cairo-back-005",
+          "name": "Multiple Admin Roles",
+          "description": "Contract has multiple privileged roles without clear documentation",
+          "regex": "(ADMIN_ROLE|OWNER_ROLE|MINTER_ROLE|UPGRADER_ROLE|OPERATOR_ROLE)",
+          "severity": "medium",
+          "recommendation": "Document all admin roles and use multi-sig governance"
+        }
+      ]
+    },
+    {
+      "id": "vulnerability",
+      "name": "Common Vulnerabilities",
+      "severity": "high",
+      "patterns": [
+        {
+          "id": "cairo-vuln-001",
+          "name": "Missing Caller Validation",
+          "description": "External function doesn't validate the caller address",
+          "regex": "#\\[external\\(v0\\)\\]\\s*fn\\s+\\w+[^{]*\\{[^}]*(?!get_caller_address|assert_only_role|only_owner)",
+          "severity": "high",
+          "recommendation": "Validate caller identity in all state-changing functions"
+        },
+        {
+          "id": "cairo-vuln-002",
+          "name": "Integer Overflow",
+          "description": "Arithmetic without overflow protection",
+          "regex": "\\+\\s*\\w+(?![\\s\\S]{0,50}(checked|safe|assert|overflow))",
+          "severity": "medium",
+          "recommendation": "Use checked arithmetic operations"
+        },
+        {
+          "id": "cairo-vuln-003",
+          "name": "Reentrancy via External Call",
+          "description": "State changes after external contract call",
+          "regex": "call_contract_syscall[\\s\\S]{0,200}self\\.",
+          "severity": "high",
+          "recommendation": "Update state before making external calls"
+        },
+        {
+          "id": "cairo-vuln-004",
+          "name": "Unprotected Initializer",
+          "description": "Contract initializer can be called multiple times",
+          "regex": "fn\\s+initializer\\s*\\([^)]*\\)[^{]*\\{[^}]*(?!initialized|assert)",
+          "severity": "high",
+          "recommendation": "Add initialization guard to prevent re-initialization"
+        }
+      ]
+    }
+  ]
+}
