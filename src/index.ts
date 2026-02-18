@@ -15,14 +15,7 @@ const PORT = parseInt(process.env.PORT || "8000");
 
 // Security middleware
 app.use(helmet({
-  contentSecurityPolicy: {
-    directives: {
-      defaultSrc: ["'self'"],
-      scriptSrc: ["'self'", "'unsafe-inline'"],
-      styleSrc: ["'self'", "'unsafe-inline'"],
-      imgSrc: ["'self'", "data:"],
-    },
-  },
+  contentSecurityPolicy: false,
 }));
 app.use(cors());
 app.use(express.json());

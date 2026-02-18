@@ -39,6 +39,10 @@ COPY patterns ./patterns
 
 EXPOSE 8000
 
+# Default environment variables (secrets provided at runtime)
+ENV PORT=8000
+ENV NODE_ENV=production
+
 # Health check for TEE monitoring
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
   CMD node -e "require('http').get('http://localhost:8000/health', (r) => { process.exit(r.statusCode === 200 ? 0 : 1) })"
