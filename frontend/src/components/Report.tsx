@@ -72,18 +72,41 @@ function FindingCard({ finding }: { finding: Finding }) {
 
 export function Report({ report, onDownloadPDF, onReset }: Props) {
   const { summary, staticAnalysis, llmAnalysis, attestation } = report;
+  const scanDate = new Date(report.timestamp).toLocaleDateString("en-US", {
+    year: "numeric", month: "long", day: "numeric", hour: "2-digit", minute: "2-digit",
+  });
 
   return (
     <div className="report">
-      {/* Risk Banner */}
-      <div className={`report__risk-banner report__risk-banner--${summary.riskLevel}`}>
-        <div className="report__risk-level">{summary.riskLevel}</div>
-        <div className="report__risk-score">
-          Risk Score: {summary.riskScore}/100 | {summary.filesAnalyzed} files analyzed | {summary.languages.join(", ")}
+      {/* Audit Report Header */}
+      <div className="report__header">
+        <div className="report__header-label">Audit Report</div>
+        <h2 className="report__header-title">
+          Vulnerabilities Found in Your Project
+        </h2>
+        <div className="report__header-meta">
+          {summary.filesAnalyzed} files analyzed &middot; {summary.languages.join(", ")} &middot; {scanDate}
         </div>
       </div>
 
-      {/* Stats */}
+      {/* Total Vulnerabilities Count */}
+      <div className="report__total">
+        <div className="report__total-count">{summary.totalFindings}</div>
+        <div className="report__total-label">
+          {summary.totalFindings === 1 ? "Vulnerability" : "Vulnerabilities"} Detected
+        </div>
+      </div>
+
+      {/* Risk Banner */}
+      <div className={`report__risk-banner report__risk-banner--${summary.riskLevel}`}>
+        <div className="report__risk-level">{summary.riskLevel} Risk</div>
+        <div className="report__risk-score">
+          Overall Risk Score: {summary.riskScore}/100
+        </div>
+      </div>
+
+      {/* Severity Breakdown */}
+      <div className="report__breakdown-title">Severity Breakdown</div>
       <div className="stats">
         <div className="stat">
           <div className="stat__value stat__value--critical">{summary.criticalCount}</div>
