@@ -465,3 +465,156 @@ body {
   margin-top: 24px;
   text-align: center;
 }
+
+/* Mobile Responsive */
+@media (max-width: 768px) {
+  .app {
+    padding: 24px 16px;
+  }
+
+  .header {
+    margin-bottom: 32px;
+  }
+
+  .header__title {
+    font-size: 24px;
+  }
+
+  .header__subtitle {
+    font-size: 13px;
+  }
+
+  .header__badge {
+    font-size: 11px;
+    padding: 5px 10px;
+  }
+
+  .upload-zone {
+    padding: 32px 20px;
+    border-radius: 12px;
+  }
+
+  .upload-zone__icon {
+    font-size: 36px;
+  }
+
+  .upload-zone__title {
+    font-size: 16px;
+  }
+
+  .upload-zone__formats {
+    flex-wrap: wrap;
+  }
+
+  .report__header-title {
+    font-size: 20px;
+  }
+
+  .report__total {
+    padding: 20px;
+  }
+
+  .report__total-count {
+    font-size: 42px;
+  }
+
+  .report__risk-banner {
+    padding: 16px;
+  }
+
+  .report__risk-level {
+    font-size: 22px;
+  }
+
+  .report__risk-score {
+    font-size: 12px;
+  }
+
+  .stats {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+  }
+
+  .stat {
+    padding: 12px;
+  }
+
+  .stat__value {
+    font-size: 20px;
+  }
+
+  .finding {
+    padding: 12px;
+  }
+
+  .finding__header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+  }
+
+  .finding__title {
+    font-size: 13px;
+  }
+
+  .finding__code {
+    font-size: 10px;
+    padding: 8px;
+  }
+
+  .actions {
+    flex-direction: column;
+  }
+
+  .btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .attestation {
+    padding: 14px;
+  }
+
+  .attestation__item {
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .attestation__label {
+    min-width: auto;
+  }
+
+  .attestation__value {
+    font-size: 11px;
+  }
+}
+
+@media (max-width: 480px) {
+  .app {
+    padding: 16px 12px;
+  }
+
+  .header__title {
+    font-size: 20px;
+  }
+
+  .upload-zone {
+    padding: 24px 16px;
+  }
+
+  .report__header-title {
+    font-size: 18px;
+  }
+
+  .report__total-count {
+    font-size: 36px;
+  }
+
+  .report__risk-level {
+    font-size: 18px;
+  }
+
+  .findings__title {
+    font-size: 14px;
+  }
+}
