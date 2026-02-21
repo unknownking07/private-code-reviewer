@@ -22,9 +22,9 @@ export class EigenAIReviewer {
   private model: string;
 
   constructor() {
-    const apiKey = process.env.OPENROUTER_API_KEY || process.env.EIGENAI_API_KEY || "";
-    const baseURL = process.env.LLM_BASE_URL || "https://openrouter.ai/api/v1";
-    this.model = process.env.LLM_MODEL || "google/gemini-2.0-flash-001";
+    const apiKey = process.env.EIGENAI_API_KEY || process.env.OPENROUTER_API_KEY || "ollama";
+    const baseURL = process.env.LLM_BASE_URL || "http://34.23.145.211:8000/v1";
+    this.model = process.env.LLM_MODEL || "qwen2.5-coder:7b-instruct-q4_K_M";
 
     this.client = new OpenAI({
       apiKey,
