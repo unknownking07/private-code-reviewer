@@ -6,7 +6,7 @@ interface Props {
 const STATUS_LABELS: Record<string, string> = {
   uploading: "Uploading code to TEE...",
   analyzing: "Running static analysis (pattern matching)...",
-  reviewing: "Deep review via EigenAI (LLM analysis)...",
+  reviewing: "Deep review via Claude (anonymized code, inside TEE)...",
   generating: "Generating audit report...",
 };
 

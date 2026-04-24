@@ -2,21 +2,30 @@ import { v4 as uuidv4 } from "uuid";
 import { FileProcessor } from "./file-processor";
 import { StaticAnalyzer } from "../analyzers/static-analyzer";
 import { EigenAIReviewer } from "./eigenai";
+import { ClaudeReviewer } from "./claude-reviewer";
 import { ReportGenerator } from "./report-generator";
-import { ReviewJob, LLMFinding } from "../utils/types";
+import { ReviewJob, LLMFinding, FileEntry } from "../utils/types";
 import { logger } from "../utils/logger";
+
+interface LLMReviewer {
+  reviewFiles(files: FileEntry[]): Promise<LLMFinding[]>;
+}
 
 export class ReviewOrchestrator {
   private jobs: Map<string, ReviewJob> = new Map();
   private fileProcessor: FileProcessor;
   private staticAnalyzer: StaticAnalyzer;
-  private eigenAI: EigenAIReviewer;
+  private llmReviewer: LLMReviewer;
   private reportGenerator: ReportGenerator;
 
   constructor() {
     this.fileProcessor = new FileProcessor();
     this.staticAnalyzer = new StaticAnalyzer();
-    this.eigenAI = new EigenAIReviewer();
+    // LLM_PROVIDER=claude routes raw code through the Anonymizer before any
+    // byte leaves the TEE; anything else keeps the original EigenAI path.
+    const provider = (process.env.LLM_PROVIDER ?? "eigenai").toLowerCase();
+    this.llmReviewer = provider === "claude" ? new ClaudeReviewer() : new EigenAIReviewer();
+    logger.info(`LLM reviewer: ${provider}`);
     this.reportGenerator = new ReportGenerator();
   }
 
@@ -55,13 +64,13 @@ export class ReviewOrchestrator {
       const staticFindings = this.staticAnalyzer.analyze(files);
       this.updateJob(job, "analyzing", 50);
 
-      // Phase 3: LLM deep review via EigenAI
+      // Phase 3: LLM deep review (either EigenAI or Claude+anonymizer, per LLM_PROVIDER)
       this.updateJob(job, "reviewing", 55);
       let llmFindings: LLMFinding[] = [];
       try {
-        llmFindings = await this.eigenAI.reviewFiles(files);
+        llmFindings = await this.llmReviewer.reviewFiles(files);
       } catch (err) {
-        logger.warn(`EigenAI review failed, continuing with static-only: ${err}`);
+        logger.warn(`LLM review failed, continuing with static-only: ${err}`);
       }
       this.updateJob(job, "reviewing", 85);
 

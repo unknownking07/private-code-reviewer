@@ -139,7 +139,7 @@ export function Report({ report, onDownloadPDF, onReset }: Props) {
       {/* LLM Findings */}
       {llmAnalysis.length > 0 && (
         <div className="findings">
-          <div className="findings__title">AI Deep Review — EigenAI ({llmAnalysis.length})</div>
+          <div className="findings__title">AI Deep Review — Claude ({llmAnalysis.length})</div>
           {llmAnalysis.map((f, i) => (
             <FindingCard key={`llm-${i}`} finding={f} />
           ))}

@@ -1,5 +1,5 @@
 import dotenv from "dotenv";
-dotenv.config();
+dotenv.config({ override: true });
 
 import express from "express";
 import cors from "cors";
@@ -17,16 +17,26 @@ const PORT = parseInt(process.env.PORT || "8000");
 app.use(helmet({
   contentSecurityPolicy: false,
 }));
-app.use(cors());
+// CORS: in dev allow any origin; in prod lock to CORS_ORIGIN (comma-separated list).
+const corsOrigins = (process.env.CORS_ORIGIN ?? "").split(",").map((s) => s.trim()).filter(Boolean);
+app.use(cors({
+  origin: corsOrigins.length > 0 ? corsOrigins : true,
+  credentials: false,
+}));
 app.use(express.json());
 
-// Rate limiting
-const limiter = rateLimit({
+// Rate limiting — apply ONLY to uploads (POST /api/review). Polling
+// (GET /api/review/:jobId) runs every 1.5s during a job and must not be
+// throttled; otherwise the UI gets a 429 mid-poll and stalls forever.
+const uploadLimiter = rateLimit({
   windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS || "900000"),
   max: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS || "20"),
-  message: { error: "Too many requests — please try again later" },
+  message: { error: "Too many uploads — please wait before submitting another review" },
 });
-app.use("/api/", limiter);
+app.use((req, res, next) => {
+  if (req.method === "POST" && req.path === "/api/review") return uploadLimiter(req, res, next);
+  next();
+});
 
 // Health check (used by TEE monitoring)
 app.get("/health", (_req, res) => {

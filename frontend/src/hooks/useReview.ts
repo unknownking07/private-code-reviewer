@@ -1,5 +1,7 @@
 import { useState, useCallback, useRef } from "react";
 
+const API_BASE = (import.meta.env.VITE_API_BASE_URL ?? "").replace(/\/$/, "");
+
 interface ReviewStatus {
   jobId: string | null;
   status: "idle" | "uploading" | "analyzing" | "reviewing" | "generating" | "complete" | "error";
@@ -25,7 +27,7 @@ export function useReview() {
       const formData = new FormData();
       formData.append("code", file);
 
-      const res = await fetch("/api/review", { method: "POST", body: formData });
+      const res = await fetch(`${API_BASE}/api/review`, { method: "POST", body: formData });
       const data = await res.json();
 
       if (!res.ok) throw new Error(data.error || "Upload failed");
@@ -37,16 +39,33 @@ export function useReview() {
         progress: 10,
       }));
 
-      // Start polling
+      // Start polling. Guard against malformed responses (e.g. 429 / 5xx
+      // returning {error:"..."} with no status field) so the UI can't stall.
+      let transientFailures = 0;
       const poll = async () => {
         try {
-          const pollRes = await fetch(`/api/review/${data.jobId}`);
+          const pollRes = await fetch(`${API_BASE}/api/review/${data.jobId}`);
           const pollData = await pollRes.json();
 
+          if (!pollRes.ok || typeof pollData.status !== "string") {
+            transientFailures++;
+            if (transientFailures >= 5) {
+              setState((prev) => ({
+                ...prev,
+                status: "error",
+                error: pollData.error || `Lost contact with server (HTTP ${pollRes.status})`,
+              }));
+              return;
+            }
+            pollingRef.current = window.setTimeout(poll, 3000);
+            return;
+          }
+
+          transientFailures = 0;
           setState((prev) => ({
             ...prev,
             status: pollData.status,
-            progress: pollData.progress,
+            progress: pollData.progress ?? prev.progress,
             report: pollData.report || null,
             error: pollData.error || null,
           }));
@@ -55,6 +74,11 @@ export function useReview() {
             pollingRef.current = window.setTimeout(poll, 1500);
           }
         } catch {
+          transientFailures++;
+          if (transientFailures >= 5) {
+            setState((prev) => ({ ...prev, status: "error", error: "Lost contact with server" }));
+            return;
+          }
           pollingRef.current = window.setTimeout(poll, 3000);
         }
       };
@@ -71,7 +95,7 @@ export function useReview() {
 
   const downloadPDF = useCallback(async () => {
     if (!state.jobId) return;
-    const res = await fetch(`/api/review/${state.jobId}/pdf`);
+    const res = await fetch(`${API_BASE}/api/review/${state.jobId}/pdf`);
     const blob = await res.blob();
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");

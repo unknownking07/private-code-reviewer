@@ -23,15 +23,25 @@ export class EigenAIReviewer {
 
   constructor() {
     const apiKey = process.env.EIGENAI_API_KEY || process.env.OPENROUTER_API_KEY || "ollama";
-    const baseURL = process.env.LLM_BASE_URL || "http://34.23.145.211:8000/v1";
+    const baseURL = process.env.LLM_BASE_URL || "http://34.57.204.172:8000/v1";
     this.model = process.env.LLM_MODEL || "qwen2.5-coder:7b-instruct-q4_K_M";
+
+    // Confidentiality invariant: the wire between this TEE and the llm-agent TEE
+    // must be TLS, otherwise network observers see the user's source code in
+    // cleartext. Fail fast rather than silently send plaintext.
+    if (process.env.LLM_REQUIRE_TLS === "true" && !baseURL.startsWith("https://")) {
+      throw new Error(
+        `LLM_REQUIRE_TLS=true but LLM_BASE_URL is not https:// (got ${baseURL}). ` +
+        `Deploy private-llm-agent with TLS, or set LLM_REQUIRE_TLS=false to bypass (NOT for production).`
+      );
+    }
 
     this.client = new OpenAI({
       apiKey,
       baseURL,
     });
 
-    logger.info(`LLM provider: ${baseURL}`);
+    logger.info(`LLM endpoint: ${baseURL} (code stays in TEE-to-TEE path)`);
     logger.info(`LLM model: ${this.model}`);
   }
 

@@ -1,6 +1,7 @@
 import { UploadZone } from "./components/UploadZone";
 import { Progress } from "./components/Progress";
 import { Report } from "./components/Report";
+import { HowItWorks } from "./components/HowItWorks";
 import { useReview } from "./hooks/useReview";
 
 export default function App() {
@@ -20,12 +21,15 @@ export default function App() {
           Scans for backdoors, rug-pull mechanisms, and exploitable vulnerabilities.
         </p>
         <div className="header__badge">
-          EigenCompute TEE &middot; Code never leaves the enclave
+          EigenCompute TEE &middot; Claude Opus &middot; Your raw code never leaves the enclave
         </div>
       </header>
 
       {status === "idle" && (
-        <UploadZone onUpload={startReview} disabled={false} />
+        <>
+          <UploadZone onUpload={startReview} disabled={false} />
+          <HowItWorks />
+        </>
       )}
 
       {isProcessing && <Progress status={status} progress={progress} />}
