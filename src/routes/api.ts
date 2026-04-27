@@ -32,7 +32,10 @@ export function createAPIRouter(orchestrator: ReviewOrchestrator): Router {
       }
 
       const job = orchestrator.createJob();
-      logger.info(`New review job ${job.id} — file: ${req.file.originalname}`);
+      // Log only extension + size, never the original filename — it can
+      // contain project identity (e.g. CompanyName/Treasury.sol).
+      const ext = path.extname(req.file.originalname).toLowerCase();
+      logger.info(`New review job ${job.id} — type=${ext} size=${req.file.size}B`);
 
       // Rename upload to preserve original extension (multer strips it)
       const originalExt = path.extname(req.file.originalname).toLowerCase();

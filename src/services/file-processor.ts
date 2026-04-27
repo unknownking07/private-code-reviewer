@@ -79,7 +79,8 @@ export class FileProcessor {
 
           const stat = fs.statSync(fullPath);
           if (stat.size > MAX_FILE_SIZE) {
-            logger.warn(`Skipping ${fullPath}: exceeds ${MAX_FILE_SIZE} bytes`);
+            // Don't log path (could leak directory structure / project identity).
+            logger.warn(`Skipping oversized .${ext} file: ${stat.size}B > ${MAX_FILE_SIZE}B`);
             continue;
           }
 
