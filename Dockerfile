@@ -37,10 +37,11 @@ COPY --from=builder /app/frontend/dist ./frontend/dist
 # Copy patterns library
 COPY patterns ./patterns
 
-EXPOSE 8000
+EXPOSE 8000 443
 
 # Default environment variables (secrets provided at runtime)
 ENV PORT=8000
+ENV HTTPS_PORT=443
 ENV NODE_ENV=production
 
 # Health check for TEE monitoring

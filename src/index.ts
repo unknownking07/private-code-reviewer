@@ -1,6 +1,8 @@
 import dotenv from "dotenv";
 dotenv.config({ override: true });
 
+import http from "http";
+import https from "https";
 import express from "express";
 import cors from "cors";
 import helmet from "helmet";
@@ -12,6 +14,7 @@ import { logger } from "./utils/logger";
 
 const app = express();
 const PORT = parseInt(process.env.PORT || "8000");
+const HTTPS_PORT = parseInt(process.env.HTTPS_PORT || "443");
 
 // Security middleware
 app.use(helmet({
@@ -74,10 +77,37 @@ app.get("*", (_req, res) => {
   res.sendFile(path.join(frontendPath, "index.html"));
 });
 
-// Bind to 0.0.0.0 for TEE accessibility
-app.listen(PORT, "0.0.0.0", () => {
-  logger.info(`Private Code Reviewer running on port ${PORT}`);
-  logger.info(`Environment: ${process.env.NODE_ENV || "development"}`);
-  logger.info(`TEE: EigenCompute (Intel TDX)`);
-  logger.info(`EigenAI model: ${process.env.EIGENAI_MODEL || "gpt-oss-120b-f16"}`);
-});
+// TLS: when TLS_CERT_B64 + TLS_KEY_B64 are provided (a Let's Encrypt cert
+// issued OUTSIDE the TEE via DNS-01 and base64-injected as KMS secrets),
+// terminate HTTPS directly inside the enclave. No proxy in the network
+// path means raw bytes traverse only Browser ↔ TEE — no CF, no edge.
+const tlsCertB64 = process.env.TLS_CERT_B64;
+const tlsKeyB64 = process.env.TLS_KEY_B64;
+const httpsEnabled = !!(tlsCertB64 && tlsKeyB64);
+
+if (httpsEnabled) {
+  const cert = Buffer.from(tlsCertB64!, "base64").toString("utf-8");
+  const key = Buffer.from(tlsKeyB64!, "base64").toString("utf-8");
+  https.createServer({ cert, key }, app).listen(HTTPS_PORT, "0.0.0.0", () => {
+    logger.info(`HTTPS listening on ${HTTPS_PORT} (TLS terminated inside TEE)`);
+  });
+
+  // HTTP listener: redirects everything to HTTPS so plaintext can't be sniffed.
+  http
+    .createServer((req, res) => {
+      const host = req.headers.host?.split(":")[0] ?? "";
+      res.writeHead(301, { Location: `https://${host}${req.url}` });
+      res.end();
+    })
+    .listen(PORT, "0.0.0.0", () => {
+      logger.info(`HTTP listening on ${PORT} (redirects → HTTPS)`);
+    });
+} else {
+  app.listen(PORT, "0.0.0.0", () => {
+    logger.warn(`HTTP only on port ${PORT} — set TLS_CERT_B64 + TLS_KEY_B64 for HTTPS`);
+  });
+}
+
+logger.info(`Private Code Reviewer running`);
+logger.info(`Environment: ${process.env.NODE_ENV || "development"}`);
+logger.info(`TEE: EigenCompute (Intel TDX)`);
