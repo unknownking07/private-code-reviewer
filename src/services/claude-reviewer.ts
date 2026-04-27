@@ -137,7 +137,9 @@ export class ClaudeReviewer {
         },
       ],
       output_config: {
-        format: zodOutputFormat(FindingsResponseSchema),
+        // SDK helper imports zod v3 types in its signature but reads zod/v4
+        // schemas at runtime. Cast bridges that v4↔v3 type mismatch.
+        format: zodOutputFormat(FindingsResponseSchema as unknown as Parameters<typeof zodOutputFormat>[0]),
       },
     });
 
@@ -155,7 +157,7 @@ export class ClaudeReviewer {
       return [];
     }
 
-    return parsed.findings.map((f) => ({
+    return parsed.findings.map((f: z.infer<typeof FindingSchema>) => ({
       title: f.title,
       description: f.description,
       severity: f.severity as Severity,
