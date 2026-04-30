@@ -70,11 +70,36 @@ app.get("/attestation", (_req, res) => {
 const orchestrator = new ReviewOrchestrator();
 app.use("/api", createAPIRouter(orchestrator));
 
+// Drop malformed-URL scanner traffic early. Public IPs constantly get
+// probed for /cgi-bin/, /.env, etc. with bogus URL-encoding; serve-static
+// throws URIError on those and pollutes logs with stacks. We have no CGI;
+// just 400 silently and move on.
+app.use((req, res, next) => {
+  try {
+    decodeURIComponent(req.path);
+    next();
+  } catch {
+    res.status(400).end();
+  }
+});
+
 // Serve React frontend in production
 const frontendPath = path.resolve(__dirname, "../frontend/dist");
 app.use(express.static(frontendPath));
 app.get("*", (_req, res) => {
   res.sendFile(path.join(frontendPath, "index.html"));
+});
+
+// Final-resort error handler: catches anything unhandled (including any
+// URIErrors that slip past the early filter) and returns 400/500 without
+// dumping stacks to the public log stream.
+app.use((err: any, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
+  if (err instanceof URIError) {
+    res.status(400).end();
+    return;
+  }
+  logger.error(`Unhandled error: ${err?.message ?? err}`);
+  if (!res.headersSent) res.status(500).end();
 });
 
 // TLS: when TLS_CERT_B64 + TLS_KEY_B64 are provided (a Let's Encrypt cert
